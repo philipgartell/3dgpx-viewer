@@ -12,6 +12,8 @@ there is no server code and nothing is uploaded anywhere.
 | `models/default.glb` | The model shown when the page first opens. |
 | `examples/` | Created when you publish examples (see below). Not present until then. |
 | `favicon.ico`, `icon-*.png`, `apple-touch-icon.png`, `site.webmanifest` | Browser tab icon, home-screen icon and app details. |
+| `3D-GPX-Viewer-User-Guide.pdf` | The user guide, linked from the Help screen's Download PDF button. |
+| `3D-GPX-Viewer-Admin-Guide.pdf` | The admin guide, linked from the Admin guide screen (Examples tab, after signing in). |
 | `_headers` | Correct file types and caching on Netlify and Cloudflare Pages. |
 | `vercel.json` | The same for Vercel. |
 | `.nojekyll` | Stops GitHub Pages from processing the files. |
