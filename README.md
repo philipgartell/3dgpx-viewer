@@ -1,4 +1,4 @@
-# Resin paperweight viewer
+# 3D GPX Viewer
 
 A single-page web app that puts any 3D model (.glb or .3mf) inside a clear resin dome, with
 backgrounds, lighting, AR placement and downloads. Everything runs in the visitor's browser;
@@ -10,6 +10,8 @@ there is no server code and nothing is uploaded anywhere.
 | --- | --- |
 | `index.html` | The whole app (HTML, CSS and JavaScript in one file). |
 | `models/default.glb` | The model shown when the page first opens. |
+| `examples/` | Created when you publish examples (see below). Not present until then. |
+| `favicon.ico`, `icon-*.png`, `apple-touch-icon.png`, `site.webmanifest` | Browser tab icon, home-screen icon and app details. |
 | `_headers` | Correct file types and caching on Netlify and Cloudflare Pages. |
 | `vercel.json` | The same for Vercel. |
 | `.nojekyll` | Stops GitHub Pages from processing the files. |
@@ -38,6 +40,31 @@ bottom of `index.html` to point somewhere else:
 ```
 
 Remove that line to open with an empty scene and an upload prompt instead.
+
+## Admin and examples
+
+The **Examples** tab shows ready-made models visitors can open with one tap. Admins add them.
+
+**Signing in.** Open the Examples tab and enter the admin password at the bottom. The default
+password is `elevate-admin`. Change it before you publish the site:
+
+1. Pick a password and get its SHA-256 hash. On Mac or Linux: `printf '%s' 'your-password' | shasum -a 256`.
+   On Windows PowerShell: `$s=[Text.Encoding]::UTF8.GetBytes('your-password'); -join ([Security.Cryptography.SHA256]::Create().ComputeHash($s) | % { $_.ToString('x2') })`.
+2. In `index.html`, replace the long value in `window.ELEVATE_ADMIN_HASH="…"` with your hash.
+
+**Adding examples.** Load a model, set up the resin, background, lighting and camera angle, then in
+the Examples tab give it a name and choose *Add current view as an example*. Reorder with ↑ ↓ and
+delete with ✕ (press twice). Your changes are kept in that browser as a draft.
+
+**Publishing examples.** Choose *Export examples for your website*. This downloads
+`elevate-examples.zip`. Unzip it into this folder (it creates `examples/examples.json` and
+`examples/models/`) and redeploy. Visitors then see the new examples.
+
+**About security.** A website with no server can't truly lock anything, so the password only
+hides the admin tools. That's fine here: an admin can only change what's in their own browser,
+and nothing reaches visitors until someone with access to your hosting uploads the exported files.
+If you later want admins to publish directly from the page, you'll need a small backend (for
+example Supabase or Firebase) for sign-in and storage.
 
 ## Dependencies
 

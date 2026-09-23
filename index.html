@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Resin paperweight viewer</title>
+<title>3D GPX Viewer</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#3c4a5e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -24,7 +29,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
 .panel{--g-tint:rgba(255,255,255,.48); --g-rim:rgba(255,255,255,.85); --g-rim2:rgba(255,255,255,.12); --g-sheen:rgba(255,255,255,.42);
   --ink:#141a22; --ink-soft:rgba(20,26,34,.66); --panel-line:rgba(20,26,34,.12); --track:rgba(20,26,34,.07); --chip:rgba(255,255,255,.34);
   position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:320px;max-width:calc(100% - 32px);
-  max-height:calc(100% - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;
+  height:min(680px,calc(100% - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)));display:flex;flex-direction:column;
   color:var(--ink);background:linear-gradient(160deg,var(--g-tint),color-mix(in srgb,var(--g-tint) 55%,transparent));
   -webkit-backdrop-filter:blur(18px) saturate(1.9) brightness(1.06);backdrop-filter:blur(18px) saturate(1.9) brightness(1.06);
   border-radius:24px;padding:16px 16px 14px;isolation:isolate;
@@ -42,9 +47,9 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 @supports not (background:color-mix(in srgb,red,blue)){.panel{background:var(--g-tint)}}
 .panel .body{display:flex;flex-direction:column;min-height:0;flex:1}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:3px;margin:12px 0 4px;border-radius:14px;background:var(--track);
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:3px;margin:12px 0 4px;border-radius:14px;background:var(--track);
   box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
-.tab{appearance:none;border:0;background:transparent;color:var(--ink-soft);font:inherit;font-size:13px;font-weight:600;padding:7px 2px;border-radius:11px;cursor:pointer;transition:background .2s,color .2s}
+.tab{appearance:none;border:0;background:transparent;color:var(--ink-soft);font:inherit;font-size:12.5px;font-weight:600;padding:7px 2px;border-radius:11px;cursor:pointer;transition:background .2s,color .2s}
 .tab[aria-selected="true"]{color:var(--ink);background:var(--chip);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 4px rgba(0,0,0,.12);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .panel[data-tone="dark"] .tab[aria-selected="true"]{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 1px 4px rgba(0,0,0,.3)}
@@ -52,6 +57,18 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:
 .panes{overflow-y:auto;min-height:0;flex:1;margin:0 -6px;padding:0 6px 2px;scrollbar-width:thin}
 .pane[hidden]{display:none}
 .group.first{margin-top:10px}
+.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.excard{position:relative;border-radius:14px;overflow:hidden;background:var(--chip);border:1px solid var(--panel-line);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.excard>button.open{appearance:none;border:0;background:none;padding:0;width:100%;cursor:pointer;color:var(--ink);font:inherit;text-align:left;display:block}
+.excard img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--track)}
+.excard .nm{display:block;padding:6px 8px 7px;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.excard.active{outline:2px solid var(--accent);outline-offset:1px}
+.excard .tools{position:absolute;top:5px;right:5px;display:flex;gap:3px}
+.excard .tools button{appearance:none;border:0;width:24px;height:24px;border-radius:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;cursor:pointer;line-height:1}
+.excard .tools button:focus-visible,.excard>button.open:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.adminbox{border-top:1px solid var(--panel-line);padding-top:12px;margin-top:18px}
+.field{width:100%;font:inherit;font-size:14px;padding:9px 11px;border-radius:10px;border:1px solid var(--panel-line);background:var(--chip);color:var(--ink)}
+.field::placeholder{color:var(--ink-soft)}
 .panel .btn{background:var(--chip);border-color:var(--panel-line);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .panel[data-tone="dark"] .btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .panel .btn:hover{background:color-mix(in srgb,var(--chip) 70%,var(--ink) 8%)}
@@ -97,11 +114,11 @@ details.adjust summary{cursor:pointer;font-size:13px;color:var(--ink-soft);margi
 details.adjust .label{margin-top:10px;margin-bottom:4px;font-size:13px;font-weight:500}
 .panel .seg .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .collapse{position:absolute;top:12px;right:12px;width:auto;padding:4px 10px;font-size:13px}
-.panel.min .body{display:none}.panel.min>p.hint{display:none}.panel.min h1{margin:0}
+.panel.min{height:auto}.panel.min .body{display:none}.panel.min>p.hint{display:none}.panel.min h1{margin:0}
 .status{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;color:var(--ink-soft);font-size:15px}
 .drop{position:fixed;inset:12px;border:2px dashed var(--accent);border-radius:20px;display:none;place-items:center;font-weight:600;color:var(--accent);background:rgba(47,127,216,.08);pointer-events:none}
 body.dragging .drop{display:grid}
-@media (max-width:560px){.panel{left:8px;right:8px;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-height:58%}}
+@media (max-width:560px){.panel{left:8px;right:8px;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px));height:58%}}
 @media (prefers-reduced-transparency:reduce){.panel{background:var(--g-tint);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px)}.panel[data-tone="light"],.panel:not([data-tone]){--g-tint:rgba(248,248,248,.94)}.panel[data-tone="dark"]{--g-tint:rgba(24,26,32,.94)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -113,17 +130,41 @@ body.dragging .drop{display:grid}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="glass-refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage id="glass-map" x="0" y="0" width="320" height="600" preserveAspectRatio="none" result="map"/><feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
 <section class="panel" data-tone="light" id="panel" aria-label="Viewer settings">
   <button class="btn collapse" id="collapse" aria-expanded="true">Hide</button>
-  <h1>Resin paperweight</h1>
+  <h1>3D GPX Viewer</h1>
   <p class="hint">Upload a .glb or .3mf model and it gets a clear resin dome. Drag to orbit, scroll or pinch to zoom.</p>
   <div class="body">
   <div class="tabs" role="tablist" aria-label="Settings">
-    <button class="tab" role="tab" id="tab-model" aria-controls="pane-model" aria-selected="true" tabindex="0">Model</button>
-    <button class="tab" role="tab" id="tab-bg" aria-controls="pane-bg" aria-selected="false" tabindex="-1">Background</button>
-    <button class="tab" role="tab" id="tab-light" aria-controls="pane-light" aria-selected="false" tabindex="-1">Lighting</button>
+    <button class="tab" role="tab" id="tab-ex" aria-controls="pane-ex" aria-selected="true" tabindex="0">Examples</button>
+    <button class="tab" role="tab" id="tab-model" aria-controls="pane-model" aria-selected="false" tabindex="-1">Model</button>
+    <button class="tab" role="tab" id="tab-bg" aria-controls="pane-bg" aria-selected="false" tabindex="-1">Scene</button>
+    <button class="tab" role="tab" id="tab-light" aria-controls="pane-light" aria-selected="false" tabindex="-1">Light</button>
     <button class="tab" role="tab" id="tab-ar" aria-controls="pane-ar" aria-selected="false" tabindex="-1">AR</button>
   </div>
   <div class="panes">
-    <div class="pane" role="tabpanel" id="pane-model" aria-labelledby="tab-model">
+    <div class="pane" role="tabpanel" id="pane-ex" aria-labelledby="tab-ex">
+    <div class="group first">
+      <div class="label">Examples <span id="exstatus"></span></div>
+      <div class="exgrid" id="exgrid"></div>
+      <p class="hint" id="exempty" hidden style="margin:4px 0 0">No examples yet. Upload your own model in the Model tab.</p>
+    </div>
+    <div class="group adminbox" id="adminbox" hidden>
+      <div class="label">Admin</div>
+      <div id="adminlogin" hidden>
+        <input class="field" type="password" id="adminpw" placeholder="Admin password" autocomplete="current-password" aria-label="Admin password">
+        <button class="btn" id="adminin" style="margin-top:8px">Sign in</button>
+      </div>
+      <div id="admintools" hidden>
+        <p class="hint" id="adminwho" style="margin:0 0 8px"></p>
+        <input class="field" type="text" id="exname" placeholder="Name for this example" maxlength="60" aria-label="Example name">
+        <button class="btn primary" id="exadd" style="margin-top:8px">Add current view as an example</button>
+        <p class="hint" style="margin:6px 0 0">Saves the loaded model with everything as it looks now: resin, background, lighting and camera angle.</p>
+        <button class="btn" id="exexport" hidden style="margin-top:10px">Export examples for your website</button>
+        <button class="btn" id="adminout" hidden style="margin-top:8px">Sign out</button>
+      </div>
+      <p class="hint" id="adminmsg" style="margin:8px 0 0" aria-live="polite"></p>
+    </div>
+    </div>
+    <div class="pane" role="tabpanel" id="pane-model" aria-labelledby="tab-model" hidden>
     <div class="group first">
       <button class="btn primary" id="open">Upload a .glb or .3mf</button>
       <button class="btn" id="save" hidden style="margin-top:8px">Download with dome</button>
@@ -131,13 +172,23 @@ body.dragging .drop{display:grid}
       <input type="file" id="file" accept=".glb,.3mf,model/gltf-binary,model/3mf" hidden>
     </div>
     <div class="group" id="domegroup">
-      <div class="label">Dome shape</div>
+      <div class="label">Resin outline</div>
       <div class="seg" role="group" aria-label="Dome shape">
         <button class="btn" data-shape="outline" aria-pressed="true">Follow the model</button>
         <button class="btn" data-shape="circle" aria-pressed="false">Circle</button>
       </div>
-      <div class="label" style="margin-top:12px">Dome height <span id="riseval">10%</span></div>
-      <input type="range" id="rise" min="0" max="40" step="1" value="10" aria-label="Dome height as a percentage of width">
+      <div class="label" style="margin-top:12px">Top edge</div>
+      <div class="seg three" id="topstyle" role="group" aria-label="Top edge">
+        <button class="btn" data-top="dome" aria-pressed="true">Dome</button>
+        <button class="btn" data-top="chamfer" aria-pressed="false">Chamfer</button>
+        <button class="btn" data-top="flat" aria-pressed="false">Flat</button>
+      </div>
+      <div class="label" style="margin-top:12px">Height <span id="hval">10%</span></div>
+      <input type="range" id="rheight" min="0" max="40" step="0.5" value="10" aria-label="Resin height above the model, as a percentage of its width">
+      <div id="curvegroup">
+        <div class="label" style="margin-top:10px"><span id="curvelabel" style="color:inherit;font-weight:600">Dome size</span> <span id="cval">10%</span></div>
+        <input type="range" id="rcurve" min="0" max="40" step="0.5" value="10" aria-label="Dome or chamfer size, as a percentage of width">
+      </div>
     </div>
     <p class="hint" id="ownnote" hidden style="margin-top:14px">This file already contains clear resin, so no dome was added.</p>
     <div class="group">
@@ -145,21 +196,21 @@ body.dragging .drop{display:grid}
       <input type="range" id="env" min="0" max="3" step="0.05" value="1" aria-label="Reflection strength">
     </div>
     <div class="group toggles">
-      <label><input type="checkbox" id="refmode"> Bend the background through the resin</label>
+      <label><input type="checkbox" id="refmode" checked> Bend the background through the resin</label>
     </div>
-    <div class="group" id="refgroup" hidden>
+    <div class="group" id="refgroup">
       <div class="label">Refraction <span id="refval">1.0×</span></div>
       <input type="range" id="ref" min="0" max="4" step="0.05" value="1" aria-label="Refraction strength">
     </div>
     <div class="group toggles">
       <label><input type="checkbox" id="floor" checked> Tabletop and shadow</label>
-      <label><input type="checkbox" id="dome" checked> Show resin</label>
+      <label><input type="checkbox" id="dome" checked> Show dome</label>
       <label><input type="checkbox" id="spin"> Auto-rotate</label>
     </div>
     </div>
     <div class="pane" role="tabpanel" id="pane-bg" aria-labelledby="tab-bg" hidden>
     <div class="group first">
-      <div class="label">Background <span id="bgname">Studio sweep</span></div>
+      <div class="label">Background <span id="bgname">Checker</span></div>
       <div class="sub">Colours and patterns</div>
       <div class="swatches" id="sw-bd"></div>
       <div class="sub">Abstract</div>
@@ -235,6 +286,7 @@ body.dragging .drop{display:grid}
   <p id="artip">Move your phone slowly over a table, then tap to place the paperweight.</p>
   <div class="arbar"><button class="btn" id="arreset">Move it</button><button class="btn primary" id="arexit">Exit AR</button></div>
 </div>
+<script>/* Website admin password (SHA-256). Default password: elevate-admin — change it, see README. */window.ELEVATE_ADMIN_HASH="13814d1c7ad2d11e798affa1e380ccfda3ca8444a5dd789786e0d85b652b4518";</script>
 <script type="application/octet-stream" id="glb"></script>
 <script>window.DEFAULT_MODEL="models/default.glb";</script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
@@ -629,7 +681,7 @@ presets.forEach((p,i)=>{
   b.style.background=thumb(p);
   p.btn=b;
   b.onclick=()=>{ if((p.type==='surface'||p.type==='abstract')&&!texCache.has(p)){bgname.textContent='Generating…'; setTimeout(()=>setBg(p,b),30);} else setBg(p,b); };
-  rowsEl[p.group].appendChild(b); if(i===0) setBg(p,b);
+  rowsEl[p.group].appendChild(b); if(p.name==='Checker') setBg(p,b);
 });
 const cw=document.createElement('label'); cw.className='sw custom'; cw.title='Custom colour';
 cw.innerHTML='<input type="color" value="#8fb3a0" aria-label="Custom background colour">';
@@ -695,7 +747,7 @@ function placeCaustic(){
   const reach=R*(0.55+0.5*Math.cos(el)); // lower light throws the glint further out
   caustic.position.set(footprint.cx-Math.sin(az)*reach,0.002,footprint.cz-Math.cos(az)*reach);
   caustic.scale.set(R*1.1,R*(0.8+0.8*Math.cos(el)),1); caustic.rotation.z=az;
-  caustic.material.color.copy(kelvin(L.k)).multiplyScalar(Math.min(1,0.12+0.1*L.int)*Math.min(1,domeRise*6));
+  caustic.material.color.copy(kelvin(L.k)).multiplyScalar(Math.min(1,0.12+0.1*L.int)*Math.min(1,(genDome&&genDome.userData.curve||0)*6+(domeTop==='flat'?0.3:0)));
 }
 function applyLight(){
   const az=THREE.MathUtils.degToRad(L.az), el=THREE.MathUtils.degToRad(L.el), col=kelvin(L.k);
@@ -738,39 +790,53 @@ $('cambtn').onclick=async()=>{
 };
 
 // ---------- Remember settings between visits and page reloads ----------
-const SKEY='resinViewer.settings.v1';
+const SKEY='elevate.settings.v2';
 function saveSettings(){
   if(restoring!==false) return;
   try{
-    const bg=!currentBg?null:currentBg.type==='image'?{kind:'image'}:currentBg.type==='camera'?null:currentBg.name==='Custom colour'?{kind:'color',a:currentBg.a}:{kind:'preset',name:currentBg.name};
-    const s={bg:bg||JSON.parse(localStorage.getItem(SKEY)||'{}').bg||null,patternTile,wallOn,wallDist,L,envK,refK,refMode,floorOn,domeOn,domeShape,domeRise,spin:$('spin').checked};
+    const bg=bgKey();
+    const s={bg:bg||JSON.parse(localStorage.getItem(SKEY)||'{}').bg||null,patternTile,wallOn,wallDist,L,envK,refK,refMode,floorOn,domeOn,domeShape,domeTop,domeHeight,domeCurve,arCm,spin:$('spin').checked};
     localStorage.setItem(SKEY,JSON.stringify(s));
   }catch(e){}
 }
-function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('resinViewer',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('elevateViewer',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 async function storeBgImage(b){ try{const d=await idb(); d.transaction('kv','readwrite').objectStore('kv').put({name:b.name,dataURL:b.dataURL,mode:b.mode},'bgImage');}catch(e){} }
 async function readBgImage(){ try{const d=await idb(); return await new Promise(res=>{const q=d.transaction('kv').objectStore('kv').get('bgImage');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);});}catch(e){return null;} }
+function bgKey(){ return !currentBg?null:currentBg.type==='image'?{kind:'image'}:currentBg.type==='camera'?null:currentBg.name==='Custom colour'?{kind:'color',a:currentBg.a}:{kind:'preset',name:currentBg.name}; }
+let pendingCam=null;
+async function applySettingsObj(s,live){
+  if(s.L){L={...L,...s.L}; markLight(L.name||'Custom');}
+  if(typeof s.patternTile==='number'){patternTile=s.patternTile; $('ptsize').value=patternTile; $('ptval').textContent=Math.round(patternTile*100)+'%';}
+  if(typeof s.wallOn==='boolean'){wallOn=s.wallOn; $('wallon').checked=wallOn;}
+  if(typeof s.wallDist==='number'){wallDist=s.wallDist; $('walldist').value=wallDist; $('wdval').textContent=wallDist.toFixed(2)+'×';}
+  if(typeof s.envK==='number'){envK=s.envK; $('env').value=envK; $('envval').textContent=envK.toFixed(1)+'×';}
+  if(typeof s.refK==='number'){refK=s.refK; $('ref').value=refK; $('refval').textContent=refK.toFixed(1)+'×';}
+  if(typeof s.refMode==='boolean'){refMode=s.refMode; $('refmode').checked=refMode; $('refgroup').hidden=!refMode;}
+  if(typeof s.floorOn==='boolean'){floorOn=s.floorOn;}
+  if(typeof s.domeOn==='boolean'){domeOn=s.domeOn; $('dome').checked=domeOn;}
+  if(s.domeShape){domeShape=s.domeShape; document.querySelectorAll('#domegroup .seg .btn[data-shape]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.shape===domeShape)));}
+  if(['dome','chamfer','flat'].includes(s.domeTop)) domeTop=s.domeTop;
+  if(typeof s.domeHeight==='number') domeHeight=s.domeHeight;
+  if(typeof s.domeCurve==='number') domeCurve=s.domeCurve;
+  if([8,12,20].includes(s.arCm)){ arCm=s.arCm; document.querySelectorAll('#arsize .btn').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.cm===arCm))); }
+  showResinUI();
+  if(typeof s.spin==='boolean'){$('spin').checked=s.spin; controls.autoRotate=s.spin;}
+  if(s.cam) pendingCam=s.cam;
+  const bg=s.bg;
+  if(bg&&bg.kind==='preset'){ const i=presets.findIndex(p=>p.name===bg.name); if(i>=0){ const p=presets[i];
+      if((p.type==='surface'||p.type==='abstract')&&!texCache.has(p)) await new Promise(r=>setTimeout(r,20)); setBg(p,p.btn);} }
+  else if(bg&&bg.kind==='color'){ cw.querySelector('input').value=bg.a; setBg({name:'Custom colour',type:'color',a:bg.a},cw); }
+  else if(bg&&bg.kind==='image'&&!live){ const st=await readBgImage();
+    if(st){ await new Promise(done=>{const img=new Image(); img.onload=()=>{ bgImage={name:st.name,type:'image',image:img,avg:avgColor(img),mode:st.mode||'photo',dataURL:st.dataURL}; showImgMode(); setBg(bgImage,$('photobtn')); done(); }; img.onerror=done; img.src=st.dataURL;}); } }
+  if(live){ applyLight(); updateFloor(); applyGlass(); setMode(); buildDome(); saveSettings(); }
+}
+function captureSettings(){
+  return {bg:bgKey(),L:{...L},envK,refK,refMode,floorOn,domeOn,domeShape,domeTop,domeHeight,domeCurve,patternTile,wallOn,wallDist,arCm,spin:$('spin').checked,
+    cam:{p:camera.position.toArray().map(v=>+v.toFixed(4)),t:controls.target.toArray().map(v=>+v.toFixed(4))}};
+}
 async function restoreSettings(){
   let s=null; try{s=JSON.parse(localStorage.getItem(SKEY)||'null');}catch(e){}
-  if(s){
-    if(s.L){L={...L,...s.L}; markLight(L.name||'Custom');}
-    if(typeof s.patternTile==='number'){patternTile=s.patternTile; $('ptsize').value=patternTile; $('ptval').textContent=Math.round(patternTile*100)+'%';}
-    if(s.wallOn===false){wallOn=false; $('wallon').checked=false;}
-    if(typeof s.wallDist==='number'){wallDist=s.wallDist; $('walldist').value=wallDist; $('wdval').textContent=wallDist.toFixed(2)+'×';}
-    if(typeof s.envK==='number'){envK=s.envK; $('env').value=envK; $('envval').textContent=envK.toFixed(1)+'×';}
-    if(typeof s.refK==='number'){refK=s.refK; $('ref').value=refK; $('refval').textContent=refK.toFixed(1)+'×';}
-    if(s.refMode){refMode=true; $('refmode').checked=true; $('refgroup').hidden=false;}
-    if(s.floorOn===false){floorOn=false;}
-    if(s.domeOn===false){domeOn=false; $('dome').checked=false;}
-    if(s.domeShape){domeShape=s.domeShape; document.querySelectorAll('#domegroup .seg .btn').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.shape===domeShape)));}
-    if(typeof s.domeRise==='number'){domeRise=s.domeRise; $('rise').value=Math.round(domeRise*100); $('riseval').textContent=Math.round(domeRise*100)+'%';}
-    if(s.spin){$('spin').checked=true; controls.autoRotate=true;}
-    const bg=s.bg;
-    if(bg&&bg.kind==='preset'){ const i=presets.findIndex(p=>p.name===bg.name); if(i>=0){ setBg(presets[i],presets[i].btn);} }
-    else if(bg&&bg.kind==='color'){ cw.querySelector('input').value=bg.a; setBg({name:'Custom colour',type:'color',a:bg.a},cw); }
-    else if(bg&&bg.kind==='image'){ const st=await readBgImage();
-      if(st){ await new Promise(done=>{const img=new Image(); img.onload=()=>{ bgImage={name:st.name,type:'image',image:img,avg:avgColor(img),mode:st.mode||'photo',dataURL:st.dataURL}; showImgMode(); setBg(bgImage,$('photobtn')); done(); }; img.onerror=done; img.src=st.dataURL;}); } }
-  }
+  if(s){ delete s.cam; await applySettingsObj(s,false); }
   lightReady=true; applyLight(); updateFloor(); setMode(); buildDome();
   restoring=false; saveSettings();
 }
@@ -779,9 +845,9 @@ async function restoreSettings(){
 // ---------- Tabs ----------
 (()=>{const tabs=[...document.querySelectorAll('.tab')];
   const select=(tb,focus)=>{tabs.forEach(x=>{const on=x===tb;x.setAttribute('aria-selected',String(on));x.tabIndex=on?0:-1;document.getElementById(x.getAttribute('aria-controls')).hidden=!on;});
-    if(focus)tb.focus(); try{localStorage.setItem('resinViewer.tab',tb.id);}catch(e){} glassMap();};
+    if(focus)tb.focus(); try{localStorage.setItem('elevate.tab',tb.id);}catch(e){} glassMap();};
   tabs.forEach((tb,i)=>{tb.onclick=()=>select(tb);tb.onkeydown=e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(e.key==='Home')select(tabs[0],true);else if(e.key==='End')select(tabs[tabs.length-1],true);else if(d){e.preventDefault();select(tabs[(i+d+tabs.length)%tabs.length],true);}};});
-  try{const s=localStorage.getItem('resinViewer.tab'); const tb=s&&document.getElementById(s); if(tb) select(tb);}catch(e){}
+  try{const s=localStorage.getItem('elevate.tab'); const tb=s&&document.getElementById(s); if(tb) select(tb);}catch(e){}
 })();
 // Glass tint follows the scene: dark scenes get smoky glass with light text, bright scenes clear glass with dark text
 function setPanelTone(l){ $('panel').dataset.tone=l<0.42?'dark':'light'; }
@@ -806,7 +872,7 @@ function glassMap(){
     if(window.ResizeObserver){ let tm; new ResizeObserver(()=>{clearTimeout(tm);tm=setTimeout(glassMap,120);}).observe($('panel')); } } })();
 setTimeout(()=>{ if($('arbtn').hidden&&$('usdzbtn').hidden) $('armsg').textContent='AR isn’t available in this browser. Open this page on an Android phone with Chrome, or on an iPhone or iPad.'; },2500);
 // Model
-let root=null, glass=[], glassMeshes=[], clearMats=[], tints=[], envK=1, refK=1, refMode=false, domeOn=true;
+let root=null, glass=[], glassMeshes=[], clearMats=[], tints=[], envK=1, refK=1, refMode=true, domeOn=true;
 const loader=new THREE.GLTFLoader();
 // The hosted page blocks fetching blob:/data: URLs, which is how three.js normally decodes a GLB's
 // embedded textures. Keep a handle on each image Blob as it's created, and decode it directly with
@@ -845,7 +911,11 @@ function registerGlass(o){
 }
 
 // ---------- Resin dome generator ----------
-var footprint=null, genDome=null, domeShape='outline', domeRise=0.10, ownResin=false;
+var footprint=null, genDome=null, domeShape='outline', domeTop='dome', domeHeight=0.10, domeCurve=0.10, ownResin=false;
+function resinDims(F){ // total height above the model and the size of the curved/chamfered edge, in scene units
+  const W=2*F.maxR, cl=W*0.004, c=domeTop==='flat'?0:domeCurve*W, top=Math.max(F.maxY+domeHeight*W,F.maxY+cl+c);
+  return {W,c,top,edge:top-c};
+}
 function collectFootprint(){
   const pts=[]; let maxY=-Infinity, minY=Infinity, count=0;
   root.traverse(o=>{ if(o.isMesh&&o.geometry.attributes.position) count+=o.geometry.attributes.position.count; });
@@ -893,15 +963,17 @@ function buildDome(){
     const gi=glass.indexOf(genDome.userData.refrMat); if(gi>=0)glass.splice(gi,1); genDome=null;}
   if(lightReady) placeCaustic();
   if(!footprint||ownResin) return;
-  const F=footprint, W=2*F.maxR, SEG=256, RINGS=64, p=2.2;
-  const margin=W*0.0006, E=F.maxY+W*0.004, D=Math.max(domeRise*W,0.0001), yb=F.minY-W*0.0002;
+  const F=footprint, SEG=256, RINGS=96, p=2.2, dims=resinDims(F), W=dims.W, c=dims.c, Ytop=dims.top, E=dims.edge;
+  const margin=W*0.0006, yb=F.minY-W*0.0002, D=Ytop-F.maxY;
   const f=u=>Math.pow(Math.max(0,1-Math.pow(u,p)),1/p);
+  // height of the top surface at fraction u of the way out, along a direction whose edge is Ri away
+  const prof=(u,Ri)=>domeTop==='dome'?E+c*f(u):domeTop==='chamfer'?Ytop-Math.min(c,Math.max(0,u*Ri-(Ri-c))):Ytop;
   const R=[]; for(let i=0;i<SEG;i++){const th=i/SEG*Math.PI*2; R.push((domeShape==='circle'?F.maxR:hullRadius(th))+margin);}
   const P=[],idx=[]; const add=(x,y,z)=>(P.push(x,y,z),P.length/3-1);
-  const top=add(F.cx,E+D,F.cz), rings=[];
+  const top=add(F.cx,Ytop,F.cz), rings=[];
   for(let k=1;k<=RINGS;k++){
     const u=Math.sin(k/RINGS*Math.PI/2), row=[];
-    for(let i=0;i<SEG;i++){const th=i/SEG*Math.PI*2; row.push(add(F.cx+Math.cos(th)*R[i]*u,E+D*f(u),F.cz+Math.sin(th)*R[i]*u));}
+    for(let i=0;i<SEG;i++){const th=i/SEG*Math.PI*2; row.push(add(F.cx+Math.cos(th)*R[i]*u,prof(u,R[i]),F.cz+Math.sin(th)*R[i]*u));}
     rings.push(row);
   }
   const tri=(a,b,c)=>idx.push(a,b,c);
@@ -922,10 +994,11 @@ function buildDome(){
     const mx=(P[a]+P[b]+P[c])/3-F.cx,my=(P[a+1]+P[b+1]+P[c+1])/3-cy,mz=(P[a+2]+P[b+2]+P[c+2])/3-F.cz;
     if(nx*mx+ny*my+nz*mz<0){const s=idx[t+1];idx[t+1]=idx[t+2];idx[t+2]=s;}
   }
-  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setIndex(idx); g.computeVertexNormals();
+  let g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setIndex(idx);
+  g=toCreasedNormals(g,Math.PI/5); // crisp where the chamfer or flat top meets the sides, smooth across the dome
   const rm=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:0.03,transmission:1,ior:1.49,specularIntensity:1,thickness:D*0.35});
   rm.userData.baseThickness=D*0.35; glass.push(rm);
-  genDome=new THREE.Mesh(g,rm); genDome.name='Resin dome'; scene.add(genDome); registerGlass(genDome);
+  genDome=new THREE.Mesh(g,rm); genDome.name='Resin dome'; genDome.userData.curve=c/W; scene.add(genDome); registerGlass(genDome);
   applyGlass(); setMode(); if(lightReady) placeCaustic();
 }
 
@@ -1053,8 +1126,11 @@ function build3MF(r){
   const outer=new THREE.Group(); outer.add(inner); return outer;
 }
 let loadToken=0;
+let lastBytes=null, lastKind='glb', pendingBytes=null;
+function lastModelBytesReady(){ if(pendingBytes){ lastBytes=pendingBytes.buf; lastKind=pendingBytes.kind; pendingBytes=null; } }
 async function load(buf){
   const token=++loadToken;
+  try{ const copy=buf.slice(0); pendingBytes={buf:copy,kind:(buf.byteLength>4&&new DataView(buf).getUint32(0,true)===0x04034b50)?'3mf':'glb'}; }catch(e){ pendingBytes=null; }
   statusEl.textContent='Loading model…'; statusEl.style.display='grid';
   await new Promise(r=>setTimeout(r,40)); // let the message paint before the heavy work
   const fail=msg=>{ if(token!==loadToken) return; statusEl.style.display='grid'; statusEl.textContent=msg; };
@@ -1099,12 +1175,13 @@ function setupModel(obj){
     root.position.set(-c.x,-box.min.y,-c.z);
     scene.add(root); root.updateMatrixWorld(true);
     if(!ownResin){collectFootprint(); buildDome();}
-    sizePattern(); orientWall();
-    const h=(ownResin?box.max.y-box.min.y:footprint.maxY+domeRise*2*footprint.maxR);
+    sizePattern(); orientWall(); lastModelBytesReady();
+    const h=(ownResin?box.max.y-box.min.y:resinDims(footprint).top);
     controls.target.set(0,h*0.35,0);
     $('domegroup').hidden=ownResin; $('ownnote').hidden=!ownResin;
     applyGlass(); setMode();
-    statusEl.style.display='none';
+    if(pendingCam){ camera.position.fromArray(pendingCam.p); controls.target.fromArray(pendingCam.t); controls.update(); pendingCam=null; }
+    statusEl.style.display='none'; if(window.__onModelReady){const f=window.__onModelReady; window.__onModelReady=null; f();}
 }
 const b64=document.getElementById('glb').textContent.trim();
 if(b64 && b64!=='__GLB'+'__'){
@@ -1132,7 +1209,16 @@ function setMode(){
 }
 document.querySelectorAll('#domegroup .seg .btn').forEach(b=>b.onclick=()=>{
   domeShape=b.dataset.shape; document.querySelectorAll('#domegroup .seg .btn').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); buildDome(); saveSettings();});
-$('rise').oninput=e=>{domeRise=e.target.value/100; $('riseval').textContent=e.target.value+'%'; buildDome(); saveSettings();};
+function showResinUI(){
+  document.querySelectorAll('#topstyle .btn').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.top===domeTop)));
+  $('curvegroup').hidden=domeTop==='flat'; $('curvelabel').textContent=domeTop==='chamfer'?'Chamfer size':'Dome size';
+  $('rheight').value=domeHeight*100; $('hval').textContent=+(domeHeight*100).toFixed(1)+'%';
+  $('rcurve').value=domeCurve*100; $('cval').textContent=+(domeCurve*100).toFixed(1)+'%';
+}
+document.querySelectorAll('#topstyle .btn').forEach(b=>b.onclick=()=>{domeTop=b.dataset.top; showResinUI(); buildDome(); saveSettings();});
+$('rheight').oninput=e=>{domeHeight=e.target.value/100; showResinUI(); buildDome(); saveSettings();};
+$('rcurve').oninput=e=>{domeCurve=e.target.value/100; showResinUI(); buildDome(); saveSettings();};
+showResinUI();
 $('refmode').onchange=e=>{refMode=e.target.checked; $('refgroup').hidden=!refMode; setMode(); saveSettings();};
 $('dome').onchange=e=>{domeOn=e.target.checked; setMode(); if(lightReady) placeCaustic(); saveSettings();};
 $('spin').onchange=e=>{controls.autoRotate=e.target.checked; saveSettings();};
@@ -1140,12 +1226,13 @@ $('spin').onchange=e=>{controls.autoRotate=e.target.checked; saveSettings();};
 let currentName='Manchester_Marathon_2026_realistic';
 const crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
 function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=crcT[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+const DOSDATE=((2026-1980)<<9)|(1<<5)|1;
 function zipOne(name,data){ // single stored (uncompressed) entry
   const nm=new TextEncoder().encode(name), crc=crc32(data), n=data.length;
   const lh=new Uint8Array(30+nm.length), lv=new DataView(lh.buffer);
-  lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0x0800,true);lv.setUint32(14,crc,true);lv.setUint32(18,n,true);lv.setUint32(22,n,true);lv.setUint16(26,nm.length,true);lh.set(nm,30);
+  lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0x0800,true);lv.setUint16(12,DOSDATE,true);lv.setUint32(14,crc,true);lv.setUint32(18,n,true);lv.setUint32(22,n,true);lv.setUint16(26,nm.length,true);lh.set(nm,30);
   const ch=new Uint8Array(46+nm.length), cv=new DataView(ch.buffer);
-  cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);cv.setUint32(16,crc,true);cv.setUint32(20,n,true);cv.setUint32(24,n,true);cv.setUint16(28,nm.length,true);cv.setUint32(42,0,true);ch.set(nm,46);
+  cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);cv.setUint16(14,DOSDATE,true);cv.setUint32(16,crc,true);cv.setUint32(20,n,true);cv.setUint32(24,n,true);cv.setUint16(28,nm.length,true);cv.setUint32(42,0,true);ch.set(nm,46);
   const end=new Uint8Array(22), ev=new DataView(end.buffer);
   ev.setUint32(0,0x06054b50,true);ev.setUint16(8,1,true);ev.setUint16(10,1,true);ev.setUint32(12,ch.length,true);ev.setUint32(16,lh.length+n,true);
   return new Blob([lh,data,ch,end]);
@@ -1167,6 +1254,7 @@ const HOSTED=!!(window.claude&&window.claude.use);
 const hostDl=HOSTED?Promise.resolve(window.claude.use('downloads')).catch(()=>null):Promise.resolve(null);
 async function offerFile(filename,bytes){ // resolves 'zip' (hosted, zipped) or 'direct'
   if(HOSTED){ const dl=await hostDl; if(!dl) throw {code:'unavailable'};
+    if(/\.zip$/i.test(filename)){ await dl.save({filename,data:new Blob([bytes])}); return 'direct'; }
     await dl.save({filename:filename.replace(/\.[^.]+$/,'')+'.zip',data:zipOne(filename,bytes)}); return 'zip'; }
   const url=URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));
   const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
@@ -1294,6 +1382,160 @@ const canQuickLook=(()=>{const a=document.createElement('a');return !!(a.relList
     finally{btn.disabled=false;}
   };
 })();
+// ---------- Examples (curated by an admin) ----------
+function zipMany(files){ // [{name, data:Uint8Array}] -> Blob, stored entries
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  for(const f of files){
+    const nm=enc.encode(f.name), crc=crc32(f.data), n=f.data.length;
+    const lh=new Uint8Array(30+nm.length), lv=new DataView(lh.buffer);
+    lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0x0800,true);lv.setUint16(12,DOSDATE,true);lv.setUint32(14,crc,true);lv.setUint32(18,n,true);lv.setUint32(22,n,true);lv.setUint16(26,nm.length,true);lh.set(nm,30);
+    const ch=new Uint8Array(46+nm.length), cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);cv.setUint16(14,DOSDATE,true);cv.setUint32(16,crc,true);cv.setUint32(20,n,true);cv.setUint32(24,n,true);cv.setUint16(28,nm.length,true);cv.setUint32(42,off,true);ch.set(nm,46);
+    parts.push(lh,f.data); central.push(ch); off+=lh.length+n;
+  }
+  const clen=central.reduce((a,c)=>a+c.length,0), end=new Uint8Array(22), ev=new DataView(end.buffer);
+  ev.setUint32(0,0x06054b50,true);ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);ev.setUint32(12,clen,true);ev.setUint32(16,off,true);
+  return new Blob([...parts,...central,end]);
+}
+function toBase64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);}
+function fromBase64(b64){const bin=atob(b64.trim()),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return u8.buffer;}
+function snapshot(){ try{ return snapshotInner(); }catch(e){ console.warn(e); return ''; } }
+function snapshotInner(){ // small JPEG of the current view for the example card
+  renderer.render(scene,camera);
+  const src=renderer.domElement, W=360, H=240, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  const sa=src.width/src.height, da=W/H; let sw=src.width, sh=src.height, sx=0, sy=0;
+  if(sa>da){sw=src.height*da; sx=(src.width-sw)/2;} else {sh=src.width/da; sy=(src.height-sh)/2;}
+  g.drawImage(src,sx,sy,sw,sh,0,0,W,H); return c.toDataURL('image/jpeg',0.72);
+}
+const EX={store:null,list:[],admin:false,active:null,busy:false};
+const exMsg=m=>{$('adminmsg').textContent=m||'';};
+function renderExamples(){
+  const grid=$('exgrid'); grid.textContent='';
+  $('exempty').hidden=EX.list.length>0;
+  EX.list.forEach((ex,i)=>{
+    const card=document.createElement('div'); card.className='excard'+(EX.active===ex.id?' active':'');
+    const open=document.createElement('button'); open.className='open'; open.setAttribute('aria-label','Open example: '+ex.name);
+    const img=document.createElement('img'); img.alt=''; if(ex.thumb) img.src=ex.thumb; open.appendChild(img);
+    const nm=document.createElement('span'); nm.className='nm'; nm.textContent=ex.name; open.appendChild(nm);
+    open.onclick=()=>openExample(ex); card.appendChild(open);
+    if(EX.admin){
+      const tl=document.createElement('div'); tl.className='tools';
+      const mk=(txt,label,fn,dis)=>{const b=document.createElement('button');b.textContent=txt;b.title=label;b.setAttribute('aria-label',label+': '+ex.name);b.disabled=!!dis;b.onclick=e=>{e.stopPropagation();fn();};tl.appendChild(b);};
+      mk('↑','Move earlier',()=>moveExample(i,-1),i===0); mk('↓','Move later',()=>moveExample(i,1),i===EX.list.length-1); mk('✕','Delete',()=>deleteExample(ex));
+      card.appendChild(tl);
+    }
+    grid.appendChild(card);
+  });
+}
+async function openExample(ex){
+  if(EX.busy) return; EX.busy=true; $('exstatus').textContent='Loading…';
+  try{
+    const buf=await EX.store.bytes(ex);
+    await applySettingsObj(ex.settings||{},true);
+    currentName=ex.file||ex.name.replace(/[^\w-]+/g,'_');
+    EX.active=ex.id; renderExamples();
+    await load(buf);
+  }catch(e){ console.error(e); statusEl.style.display='grid'; statusEl.textContent='This example couldn’t be loaded.'; }
+  finally{ EX.busy=false; $('exstatus').textContent=''; }
+}
+async function addExample(){
+  if(!lastBytes||!root){ exMsg('Load a model first (Model tab), set it up how you like, then add it here.'); return; }
+  const name=$('exname').value.trim()||currentName.replace(/_/g,' ');
+  $('exadd').disabled=true; exMsg('Saving…');
+  try{
+    const ex={id:'ex'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,file:currentName,kind:lastKind,thumb:snapshot(),settings:JSON.parse(JSON.stringify(captureSettings())),order:Date.now()};
+    await EX.store.add(ex,new Uint8Array(lastBytes)); $('exname').value='';
+    exMsg(EX.store.kind==='site'?'Added. Export the examples and upload them to your website to publish.':'Added. Everyone who opens this page can now see it.');
+    await refreshExamples();
+  }catch(e){ console.error(e); exMsg(e&&e.code==='too_large'?'That model is too large to store as an example (15 MB max).':'The example couldn’t be saved'+(e&&e.message?' ('+e.message+')':'')+'.'); }
+  finally{ $('exadd').disabled=false; }
+}
+async function deleteExample(ex){
+  if(EX.confirmDel!==ex.id){ EX.confirmDel=ex.id; exMsg('Press ✕ again to delete “'+ex.name+'”.'); setTimeout(()=>{ if(EX.confirmDel===ex.id){EX.confirmDel=null; exMsg('');} },5000); return; }
+  EX.confirmDel=null;
+  try{ await EX.store.remove(ex); await refreshExamples(); exMsg('Deleted.'); }catch(e){ console.error(e); exMsg('That example couldn’t be deleted.'); }
+}
+async function moveExample(i,d){
+  const a=EX.list[i], b=EX.list[i+d]; if(!a||!b) return;
+  try{ await EX.store.swap(a,b); await refreshExamples(); }catch(e){ console.error(e); exMsg('Couldn’t reorder the examples.'); }
+}
+async function refreshExamples(){ try{ EX.list=(await EX.store.list()).sort((a,b)=>(a.order||0)-(b.order||0)); }catch(e){ console.error(e); EX.list=[]; $('exempty').hidden=false; $('exempty').textContent='Examples couldn’t be loaded.'; } renderExamples(); }
+
+// Inside Claude: examples live in this page's shared database; editors of the page are the admins.
+async function hostedStore(){
+  const db=await claude.use('db'); if(!db) return null;
+  const user=await claude.use('user'); const col=db.collection('examples');
+  const admin=!!(user&&await user.canEdit()); const assets=admin?await claude.use('assets'):null;
+  return {kind:'hosted',admin:admin&&!!assets,
+    async list(){ const s=await col.get(); return s.docs.map(d=>({id:d.id,...d.data()})); },
+    async bytes(ex){ const r=await fetch('/_blob/'+ex.asset); if(!r.ok) throw new Error('model file missing'); return fromBase64(await r.text()); },
+    async add(ex,u8){ const b64=toBase64(u8); if(b64.length>20*1024*1024-1024) throw {code:'too_large'};
+      const up=await assets.upload(new Blob([b64],{type:'text/plain'}),{type:'text/plain'});
+      await col.doc(ex.id).set({name:ex.name,file:ex.file,kind:ex.kind,thumb:ex.thumb,settings:ex.settings,order:ex.order,asset:up.id}); },
+    async remove(ex){ await col.doc(ex.id).delete(); try{ if(ex.asset) await assets.delete(ex.asset);}catch(e){} },
+    async swap(a,b){ const oa=a.order, ob=b.order===oa?oa+1:b.order; await col.doc(a.id).update({order:ob}); await col.doc(b.id).update({order:oa}); }
+  };
+}
+// On your own website: examples are files next to the page (examples/examples.json + models).
+// Admin changes are kept as a draft in this browser, then exported as files to upload to the site.
+function siteStore(){
+  const DKEY='exDrafts';
+  const readDrafts=async()=>{ try{const d=await idb(); return await new Promise(res=>{const q=d.transaction('kv').objectStore('kv').get(DKEY);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);});}catch(e){return null;} };
+  const writeDrafts=async list=>{ const d=await idb(); await new Promise((res,rej)=>{const tx=d.transaction('kv','readwrite');tx.objectStore('kv').put(list,DKEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); };
+  const published=async()=>{ try{ const r=await fetch('examples/examples.json',{cache:'no-cache'}); if(!r.ok) return []; const j=await r.json(); return (j.examples||[]).map((e,i)=>({order:i,...e})); }catch(e){ return []; } };
+  const S={kind:'site',admin:false,
+    async list(){ if(S.admin){ const d=await readDrafts(); if(d) return d.map(({bytes,...e})=>e); } return published(); },
+    async bytes(ex){ if(S.admin){ const d=await readDrafts(); const m=d&&d.find(x=>x.id===ex.id); if(m&&m.bytes) return m.bytes.slice(0); }
+      const r=await fetch(ex.model); if(!r.ok) throw new Error('model file missing'); return r.arrayBuffer(); },
+    async draft(){ let d=await readDrafts(); if(!d){ d=await published(); await writeDrafts(d); } return d; },
+    async add(ex,u8){ const d=await S.draft(); d.push({...ex,bytes:u8.buffer.slice(u8.byteOffset,u8.byteOffset+u8.byteLength)}); await writeDrafts(d); },
+    async remove(ex){ const d=await S.draft(); await writeDrafts(d.filter(x=>x.id!==ex.id)); },
+    async swap(a,b){ const d=await S.draft(); const A=d.find(x=>x.id===a.id), B=d.find(x=>x.id===b.id); const o=A.order; A.order=B.order===o?o+1:B.order; B.order=o; await writeDrafts(d); },
+    async exportZip(){
+      const d=(await S.draft()).sort((a,b)=>(a.order||0)-(b.order||0)), files=[], out=[];
+      for(const [i,ex] of d.entries()){
+        const path='examples/models/'+ex.id+'.'+(ex.kind||'glb');
+        const bytes=ex.bytes?new Uint8Array(ex.bytes):new Uint8Array(await (await fetch(ex.model)).arrayBuffer());
+        files.push({name:path,data:bytes});
+        out.push({id:ex.id,name:ex.name,file:ex.file,kind:ex.kind||'glb',model:path,thumb:ex.thumb,settings:ex.settings,order:i});
+      }
+      files.unshift({name:'examples/examples.json',data:new TextEncoder().encode(JSON.stringify({examples:out},null,1))});
+      return new Uint8Array(await zipMany(files).arrayBuffer());
+    }
+  };
+  return S;
+}
+async function sha256hex(s){ const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function showAdmin(){
+  $('adminbox').hidden=!(EX.store&&(EX.store.kind==='site'||EX.admin));
+  $('adminlogin').hidden=EX.admin||EX.store.kind!=='site'; $('admintools').hidden=!EX.admin;
+  $('exexport').hidden=!(EX.admin&&EX.store.kind==='site'); $('adminout').hidden=!(EX.admin&&EX.store.kind==='site');
+  $('adminwho').textContent=EX.store.kind==='site'?'Signed in as admin. Changes are saved in this browser until you export them.':'You can edit this page, so you can manage its examples. Changes appear for everyone straight away.';
+  renderExamples();
+}
+(async()=>{
+  EX.store=HOSTED?await hostedStore():siteStore();
+  if(!EX.store){ $('exempty').hidden=false; $('exempty').textContent='Examples aren’t available in this view.'; return; }
+  if(EX.store.kind==='hosted') EX.admin=EX.store.admin;
+  else { try{ if(sessionStorage.getItem('elevate.admin')==='1'){ EX.admin=EX.store.admin=true; } }catch(e){} }
+  showAdmin(); await refreshExamples();
+})();
+$('adminin').onclick=async()=>{
+  const pw=$('adminpw').value; if(!pw) return;
+  if(!(window.crypto&&crypto.subtle)){ exMsg('Admin sign-in needs the site to be served over HTTPS.'); return; }
+  if(await sha256hex(pw)===(window.ELEVATE_ADMIN_HASH||'')){ EX.admin=EX.store.admin=true; try{sessionStorage.setItem('elevate.admin','1');}catch(e){} $('adminpw').value=''; exMsg(''); showAdmin(); await refreshExamples(); }
+  else exMsg('That password isn’t right.');
+};
+$('adminpw').onkeydown=e=>{ if(e.key==='Enter') $('adminin').click(); };
+$('adminout').onclick=async()=>{ EX.admin=EX.store.admin=false; try{sessionStorage.removeItem('elevate.admin');}catch(e){} exMsg(''); showAdmin(); await refreshExamples(); };
+$('exadd').onclick=addExample;
+$('exexport').onclick=async()=>{
+  $('exexport').disabled=true; exMsg('Preparing files…');
+  try{ const z=await EX.store.exportZip(); await offerFile('elevate-examples.zip',z);
+    exMsg('Downloaded elevate-examples.zip. Unzip it into your site folder (it adds an examples folder), then redeploy to publish.'); }
+  catch(e){ console.error(e); exMsg('The export couldn’t be created.'); }
+  finally{ $('exexport').disabled=false; }
+};
 $('open').onclick=()=>$('file').click();
 function readFile(f){if(!f)return; if(!/\.(glb|3mf)$/i.test(f.name)){statusEl.style.display='grid';statusEl.textContent='Choose a .glb or .3mf file.';return;} currentName=f.name.replace(/\.(glb|3mf)$/i,''); const r=new FileReader(); r.onload=()=>load(r.result); r.readAsArrayBuffer(f);}
 $('file').onchange=e=>readFile(e.target.files[0]);
