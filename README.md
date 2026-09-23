@@ -9,6 +9,7 @@ there is no server code and nothing is uploaded anywhere.
 | File | Purpose |
 | --- | --- |
 | `index.html` | The whole app (HTML, CSS and JavaScript in one file). |
+| `config.js` | Your settings: the admin password and the optional Supabase details for live visitor counts. Leave it out when uploading updates. |
 | `models/default.glb` | The model shown when the page first opens. |
 | `examples/` | Created when you publish examples (see below). Not present until then. |
 | `favicon.ico`, `icon-*.png`, `apple-touch-icon.png`, `site.webmanifest` | Browser tab icon, home-screen icon and app details. |
@@ -52,7 +53,7 @@ password is `elevate-admin`. Change it before you publish the site:
 
 1. Pick a password and get its SHA-256 hash. On Mac or Linux: `printf '%s' 'your-password' | shasum -a 256`.
    On Windows PowerShell: `$s=[Text.Encoding]::UTF8.GetBytes('your-password'); -join ([Security.Cryptography.SHA256]::Create().ComputeHash($s) | % { $_.ToString('x2') })`.
-2. In `index.html`, replace the long value in `window.ELEVATE_ADMIN_HASH="…"` with your hash.
+2. In `config.js`, replace the long value in `window.ELEVATE_ADMIN_HASH = "…"` with your hash.
 
 **Adding examples.** Load a model, set up the resin, background, lighting and camera angle, then in
 the Examples tab give it a name and choose *Add current view as an example*. Reorder with ↑ ↓ and
@@ -68,10 +69,16 @@ and nothing reaches visitors until someone with access to your hosting uploads t
 If you later want admins to publish directly from the page, you'll need a small backend (for
 example Supabase or Firebase) for sign-in and storage.
 
+## Live visitors
+
+The Admin tab can show how many people have the site open right now, using a free Supabase
+project. Create one at supabase.com, then paste its Project URL and publishable (anon public)
+key into `config.js`. Step-by-step instructions are in the Admin Guide (`3D-GPX-Viewer-Admin-Guide.pdf`).
+
 ## Dependencies
 
 The 3D engine (three.js 0.170.0) and the Figtree font load from public CDNs
-(cdn.jsdelivr.net and fonts.googleapis.com), so visitors need an internet connection. To host
+(cdn.jsdelivr.net and fonts.googleapis.com), and the Supabase library loads from cdn.jsdelivr.net when live visitors are set up, so visitors need an internet connection. To host
 everything yourself, download three.js 0.170.0 and change the two URLs in the `importmap` near
 the top of `index.html` to your own copies of `build/three.module.js` and `examples/jsm/`.
 
