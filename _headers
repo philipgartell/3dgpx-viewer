@@ -1,0 +1,6 @@
+/models/*
+  Cache-Control: public, max-age=86400
+/*.glb
+  Content-Type: model/gltf-binary
+/*.3mf
+  Content-Type: model/3mf
