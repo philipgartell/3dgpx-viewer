@@ -7,5 +7,5 @@ window.ELEVATE_ADMIN_HASH = "13814d1c7ad2d11e798affa1e380ccfda3ca8444a5dd789786e
 
 // Live visitor count in the Admin tab (optional). Paste your Supabase Project URL and
 // publishable (anon public) key here. See "Live visitors" in the Admin Guide.
-window.SUPABASE_URL = "";
-window.SUPABASE_KEY = "";
+window.SUPABASE_URL = "https://xknisirqcenliynosrvl.supabase.co";
+window.SUPABASE_KEY = "sb_publishable_WE5FzteQvwEqle29ibsVLw_YwGPU5iR";
